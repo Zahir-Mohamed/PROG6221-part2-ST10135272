@@ -1,0 +1,307 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Recipe
+{
+    // A list of tuples to store ingredient details: name, quantity, unit, calories, and food group.
+    public List<(string Name, double Quantity, string Unit, int Calories, FoodGroup Group)> Ingredients { get; set; }
+
+    // A list of strings to store recipe steps.
+    public List<string> Steps { get; set; }
+
+    // The original quantities of the ingredients (used for resetting).
+    private List<(string Name, double Quantity, string Unit, int Calories, FoodGroup Group)> originalQuantities;
+
+    // The name of the recipe.
+    public string Name { get; set; }
+
+    public Recipe(string name)
+    {
+        Name = name;
+        Ingredients = new List<(string Name, double Quantity, string Unit, int Calories, FoodGroup Group)>();
+        Steps = new List<string>();
+    }
+
+    // A method to scale the recipe by a factor.
+    public void Scale(double factor)
+    {
+        if (originalQuantities == null)
+        {
+            // Store the original quantities if we haven't already.
+            originalQuantities = new List<(string Name, double Quantity, string Unit, int Calories, FoodGroup Group)>(Ingredients);
+        }
+
+        // Loop through each ingredient and update its quantity.
+        for (int i = 0; i < Ingredients.Count; i++)
+        {
+            Ingredients[i] = (Ingredients[i].Name, originalQuantities[i].Quantity * factor, Ingredients[i].Unit, Ingredients[i].Calories, Ingredients[i].Group);
+        }
+    }
+
+    // A method to reset the quantities of the ingredients to their original values.
+    public void ResetQuantities()
+    {
+        if (originalQuantities != null)
+        {
+            // Restore the original quantities.
+            for (int i = 0; i < Ingredients.Count; i++)
+            {
+                Ingredients[i] = originalQuantities[i];
+            }
+
+            originalQuantities = null;
+        }
+    }
+
+    // A method to display the recipe.
+    public void Display()
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("Ingredients:");
+        Console.ResetColor();
+
+        // Loop through each ingredient and display its details.
+        foreach (var ingredient in Ingredients)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"{ingredient.Quantity} {ingredient.Unit} of {ingredient.Name} ({ingredient.Calories} calories, {ingredient.Group})");
+            Console.ResetColor();
+        }
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nSteps:");
+        Console.ResetColor();
+
+        // Loop through each step and display its number and description.
+        for (int i = 0; i < Steps.Count; i++)
+        {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"{i + 1}. {Steps[i]}");
+            Console.ResetColor();
+        }
+    }
+}
+
+class Program
+{
+    // List to store all the recipes.
+    static List<Recipe> recipes = new List<Recipe>();
+
+    static void Main(string[] args)
+    {
+        // Create a new recipe object and set the running flag to true.
+        Recipe recipe = null;
+        bool running = true;
+
+        while (running)
+        {
+            Console.WriteLine("\nOptions:");
+            Console.WriteLine("1. Enter recipe details");
+            Console.WriteLine("2. Display recipe");
+            Console.WriteLine("3. Scale recipe");
+            Console.WriteLine("4. Reset quantities");
+            Console.WriteLine("5. Clear all recipes");
+            Console.WriteLine("6. Exit");
+            Console.Write("Enter your choice: ");
+
+            // Check if the user entered a valid integer.
+            if (int.TryParse(Console.ReadLine(), out int choice))
+            {
+                switch (choice)
+                {
+                    case 1:
+                        // Prompt the user to enter the name of the recipe.
+                        Console.Write("Enter the name of the recipe: ");
+                        string recipeName = Console.ReadLine();
+
+                        // Create a new recipe object.
+                        recipe = new Recipe(recipeName);
+
+                        // Prompt the user to enter the number of ingredients.
+                        Console.Write("Enter the number of ingredients: ");
+                        int numIngredients = int.Parse(Console.ReadLine());
+
+                        for (int i = 0; i < numIngredients; i++)
+                        {
+                            try
+                            {
+                                // Prompt the user to enter the ingredient details: name, quantity, unit, calories, and food group.
+                                Console.Write($"Enter the name of ingredient {i + 1}: ");
+                                string name = Console.ReadLine();
+
+                                Console.Write($"Enter the quantity of ingredient {i + 1}: ");
+                                double quantity = double.Parse(Console.ReadLine());
+
+                                Console.Write($"Enter the unit of ingredient {i + 1}: ");
+                                string unit = Console.ReadLine();
+
+                                Console.Write($"Enter the calories of ingredient {i + 1}: ");
+                                int calories = int.Parse(Console.ReadLine());
+
+                                FoodGroup group = PromptForFoodGroup($"Enter the food group of ingredient {i + 1}: ");
+
+                                // Add the ingredient details to the recipe object.
+                                recipe.Ingredients.Add((name, quantity, unit, calories, group));
+                            }
+                            catch (Exception ex)
+                            {
+                                // If there is an error, display the error message and decrement the loop counter.
+                                Console.WriteLine($"Error: {ex.Message}");
+                                i--;
+                            }
+                        }
+
+                        // Prompt the user to enter the number of steps.
+                        Console.Write("Enter the number of steps: ");
+                        int numSteps = int.Parse(Console.ReadLine());
+
+                        for (int i = 0; i < numSteps; i++)
+                        {
+                            try
+                            {
+                                Console.Write($"Enter step {i + 1}: ");
+                                string step = Console.ReadLine();
+
+                                if (string.IsNullOrWhiteSpace(step))
+                                {
+                                    throw new ArgumentException("Step cannot be empty.");
+                                }
+
+                                recipe.Steps.Add(step);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Error: {ex.Message}");
+                                i--;
+                            }
+                        }
+
+                        // Add the recipe to the list of recipes.
+                        recipes.Add(recipe);
+                        break;
+
+                    case 2:
+                        // Check if there are any recipes.
+                        if (recipes.Count == 0)
+                        {
+                            Console.WriteLine("No recipes found. Please enter a recipe first.");
+                        }
+                        else
+                        {
+                            // Sort the recipes in alphabetical order by name.
+                            List<Recipe> sortedRecipes = recipes.OrderBy(r => r.Name).ToList();
+
+                            // Display the list of recipes.
+                            Console.WriteLine("\nList of Recipes:");
+                            Console.WriteLine("----------------");
+
+                            for (int i = 0; i < sortedRecipes.Count; i++)
+                            {
+                                Console.WriteLine($"{i + 1}. {sortedRecipes[i].Name}");
+                            }
+
+                            // Prompt the user to choose a recipe to display.
+                            Console.Write("\nEnter the number of the recipe to display: ");
+                            if (int.TryParse(Console.ReadLine(), out int recipeIndex) && recipeIndex >= 1 && recipeIndex <= sortedRecipes.Count)
+                            {
+                                // Display the selected recipe.
+                                sortedRecipes[recipeIndex - 1].Display();
+                            }
+                            else
+                            {
+                                Console.WriteLine("Invalid input. Please enter a valid recipe number.");
+                            }
+                        }
+                        break;
+
+                    case 3:
+                        // Check if a recipe is selected.
+                        if (recipe == null)
+                        {
+                            Console.WriteLine("No recipe selected. Please enter a recipe first.");
+                        }
+                        else
+                        {
+                            // Prompt the user to enter the scaling factor.
+                            Console.Write("Enter the scaling factor: ");
+                            if (double.TryParse(Console.ReadLine(), out double scale))
+                            {
+                                // Scale the recipe by the factor.
+                                recipe.Scale(scale);
+                                Console.WriteLine("Recipe scaled successfully.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Invalid input. Please enter a valid scaling factor.");
+                            }
+                        }
+                        break;
+
+                    case 4:
+                        // Check if a recipe is selected.
+                        if (recipe == null)
+                        {
+                            Console.WriteLine("No recipe selected. Please enter a recipe first.");
+                        }
+                        else
+                        {
+                            // Reset the quantities of the ingredients to their original values.
+                            recipe.ResetQuantities();
+                            Console.WriteLine("Quantities reset successfully.");
+                        }
+                        break;
+
+                    case 5:
+                        // Clear all recipes.
+                        recipes.Clear();
+                        Console.WriteLine("All recipes cleared.");
+                        break;
+
+                    case 6:
+                        // Exit the program.
+                        running = false;
+                        break;
+
+                    default:
+                        Console.WriteLine("Invalid input. Please enter a valid option number.");
+                        break;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid input. Please enter a valid option number.");
+            }
+        }
+
+        Console.WriteLine("\nProgram terminated.");
+    }
+
+    // Prompt the user to enter a food group and return the corresponding enum value.
+    static FoodGroup PromptForFoodGroup(string prompt)
+    {
+        while (true)
+        {
+            Console.Write(prompt);
+            string input = Console.ReadLine();
+
+            if (Enum.TryParse(input, true, out FoodGroup group))
+            {
+                return group;
+            }
+
+            Console.WriteLine("Invalid food group. Please enter a valid food group.");
+        }
+    }
+}
+
+// Enum to represent the food groups.
+enum FoodGroup
+{
+    Fruit,
+    Vegetable,
+    Grain,
+    Protein,
+    Dairy,
+    Fat
+}
